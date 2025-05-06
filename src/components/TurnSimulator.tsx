@@ -14,7 +14,7 @@ const TurnSimulator: React.FC = () => {
   const [selectedLetter, setSelectedLetter] = useState<string>(ITALIAN_ALPHABET[0]);
   const [currentNumber, setCurrentNumber] = useState<number>(0);
 
-  const playBeep = useCallback(() => {
+  const playToneSequence = useCallback((tones: { frequency: number, startTime: number, duration: number, volume: number }[]) => {
     try {
       const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
       if (!audioCtx) {
@@ -23,36 +23,46 @@ const TurnSimulator: React.FC = () => {
         return;
       }
 
-      const playTone = (frequency: number, startTime: number, duration: number, volume: number) => {
+      tones.forEach(tone => {
         const oscillator = audioCtx.createOscillator();
         const gainNode = audioCtx.createGain();
         oscillator.connect(gainNode);
         gainNode.connect(audioCtx.destination);
         
         oscillator.type = 'sine';
-        oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime + startTime);
-        gainNode.gain.setValueAtTime(volume, audioCtx.currentTime + startTime); // Volume per tono
+        oscillator.frequency.setValueAtTime(tone.frequency, audioCtx.currentTime + tone.startTime);
+        gainNode.gain.setValueAtTime(tone.volume, audioCtx.currentTime + tone.startTime);
         
-        oscillator.start(audioCtx.currentTime + startTime);
-        oscillator.stop(audioCtx.currentTime + startTime + duration);
-      };
-
-      const volume = 0.3; // Volume aumentato (valore tra 0 e 1)
-      const plinFrequency = 880; // Frequenza per "plin" (es. La5)
-      const plonFrequency = 659.25; // Frequenza per "plon" (es. Mi5)
-      const toneDuration = 0.12; // Durata di ogni tono
-      const delayBetweenTones = 0.03; // Breve pausa tra i toni
-
-      // Plin
-      playTone(plinFrequency, 0, toneDuration, volume);
-      // Plon (suonato dopo il plin)
-      playTone(plonFrequency, toneDuration + delayBetweenTones, toneDuration, volume);
+        oscillator.start(audioCtx.currentTime + tone.startTime);
+        oscillator.stop(audioCtx.currentTime + tone.startTime + tone.duration);
+      });
 
     } catch (error) {
       console.error("Errore durante la riproduzione del suono:", error);
       toast.error("Impossibile riprodurre il suono bitonale.");
     }
   }, []);
+
+  const volume = 0.3;
+  const plinFrequency = 880; 
+  const plonFrequency = 659.25;
+  const toneDuration = 0.12;
+  const delayBetweenTones = 0.03;
+
+  const playBeepForward = useCallback(() => {
+    playToneSequence([
+      { frequency: plinFrequency, startTime: 0, duration: toneDuration, volume },
+      { frequency: plonFrequency, startTime: toneDuration + delayBetweenTones, duration: toneDuration, volume },
+    ]);
+  }, [playToneSequence, volume, plinFrequency, plonFrequency, toneDuration, delayBetweenTones]);
+
+  const playBeepBackward = useCallback(() => {
+    playToneSequence([
+      { frequency: plonFrequency, startTime: 0, duration: toneDuration, volume },
+      { frequency: plinFrequency, startTime: toneDuration + delayBetweenTones, duration: toneDuration, volume },
+    ]);
+  }, [playToneSequence, volume, plinFrequency, plonFrequency, toneDuration, delayBetweenTones]);
+
 
   const speakTurn = useCallback((letter: string, number: number) => {
     if ('speechSynthesis' in window) {
@@ -94,10 +104,10 @@ const TurnSimulator: React.FC = () => {
       setSelectedLetter(newSelectedLetter);
     }
     setCurrentNumber(newNumber);
-    playBeep();
+    playBeepForward();
     setTimeout(() => {
       speakTurn(newSelectedLetter, newNumber);
-    }, 500); // Ritardo di 500ms
+    }, 500);
   };
 
   const handlePrevious = () => {
@@ -115,17 +125,17 @@ const TurnSimulator: React.FC = () => {
       setSelectedLetter(newSelectedLetter);
     }
     setCurrentNumber(newNumber);
-    playBeep();
+    playBeepBackward(); // Usa il suono invertito
     setTimeout(() => {
       speakTurn(newSelectedLetter, newNumber);
-    }, 500); // Ritardo di 500ms
+    }, 500);
   };
   
   const handleAnnounceCurrent = () => {
-    playBeep();
+    playBeepForward(); // Il tasto annuncia usa il suono standard "avanti"
     setTimeout(() => {
       speakTurn(selectedLetter, currentNumber);
-    }, 500); // Ritardo di 500ms
+    }, 500);
   };
 
   const formattedNumber = String(currentNumber).padStart(2, '0');
