@@ -26,10 +26,10 @@ const TurnSimulator: React.FC = () => {
       oscillator.connect(gainNode);
       gainNode.connect(audioCtx.destination);
       oscillator.type = 'sine';
-      oscillator.frequency.setValueAtTime(660, audioCtx.currentTime); // Frequenza più acuta
+      oscillator.frequency.setValueAtTime(660, audioCtx.currentTime);
       gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
       oscillator.start();
-      oscillator.stop(audioCtx.currentTime + 0.15); // Durata leggermente maggiore
+      oscillator.stop(audioCtx.currentTime + 0.15);
     } catch (error) {
       console.error("Errore durante la riproduzione del suono:", error);
       toast.error("Impossibile riprodurre il suono.");
@@ -39,13 +39,13 @@ const TurnSimulator: React.FC = () => {
   const speakTurn = useCallback((letter: string, number: number) => {
     if ('speechSynthesis' in window) {
       const numStr = String(number).padStart(2, '0');
-      const digits = numStr.split('').join(' '); // "0 1" for 01, "1 2" for 12
+      const digits = numStr.split('').join(' ');
       const textToSpeak = `${letter} ${digits}`;
       
       const utterance = new SpeechSynthesisUtterance(textToSpeak);
       utterance.lang = 'it-IT';
-      utterance.pitch = 1.2; // Voce leggermente più acuta
-      utterance.rate = 0.9; // Leggermente più lenta per chiarezza
+      utterance.pitch = 1.2;
+      utterance.rate = 0.9;
       speechSynthesis.speak(utterance);
     } else {
       console.warn("Sintesi vocale non supportata.");
@@ -63,22 +63,40 @@ const TurnSimulator: React.FC = () => {
 
   const handleNext = () => {
     let newNumber = currentNumber + 1;
+    let newSelectedLetter = selectedLetter;
+
     if (newNumber > 99) {
       newNumber = 0;
+      const currentLetterIndex = availableLetters.indexOf(selectedLetter);
+      let nextLetterIndex = currentLetterIndex + 1;
+      if (nextLetterIndex >= availableLetters.length) {
+        nextLetterIndex = 0; // Wrap around to the first letter
+      }
+      newSelectedLetter = availableLetters[nextLetterIndex];
+      setSelectedLetter(newSelectedLetter);
     }
     setCurrentNumber(newNumber);
     playBeep();
-    speakTurn(selectedLetter, newNumber);
+    speakTurn(newSelectedLetter, newNumber);
   };
 
   const handlePrevious = () => {
     let newNumber = currentNumber - 1;
+    let newSelectedLetter = selectedLetter;
+
     if (newNumber < 0) {
       newNumber = 99;
+      const currentLetterIndex = availableLetters.indexOf(selectedLetter);
+      let prevLetterIndex = currentLetterIndex - 1;
+      if (prevLetterIndex < 0) {
+        prevLetterIndex = availableLetters.length - 1; // Wrap around to the last letter
+      }
+      newSelectedLetter = availableLetters[prevLetterIndex];
+      setSelectedLetter(newSelectedLetter);
     }
     setCurrentNumber(newNumber);
     playBeep();
-    speakTurn(selectedLetter, newNumber);
+    speakTurn(newSelectedLetter, newNumber);
   };
   
   const handleAnnounceCurrent = () => {
@@ -96,7 +114,7 @@ const TurnSimulator: React.FC = () => {
       <CardContent className="space-y-6">
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label htmlFor="alphabet-type" className="block text-sm font-medium text-gray-700 mb-1">Tipo Alfabeto</label>
+            <label htmlFor="alphabet-type" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tipo Alfabeto</label>
             <Select value={alphabetType} onValueChange={(value: 'italian' | 'english') => setAlphabetType(value)}>
               <SelectTrigger id="alphabet-type">
                 <SelectValue placeholder="Seleziona tipo alfabeto" />
@@ -108,7 +126,7 @@ const TurnSimulator: React.FC = () => {
             </Select>
           </div>
           <div>
-            <label htmlFor="letter-select" className="block text-sm font-medium text-gray-700 mb-1">Lettera</label>
+            <label htmlFor="letter-select" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Lettera</label>
             <Select value={selectedLetter} onValueChange={setSelectedLetter}>
               <SelectTrigger id="letter-select">
                 <SelectValue placeholder="Seleziona lettera" />
