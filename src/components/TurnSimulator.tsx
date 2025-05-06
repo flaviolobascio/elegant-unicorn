@@ -19,20 +19,38 @@ const TurnSimulator: React.FC = () => {
       const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
       if (!audioCtx) {
         console.warn("AudioContext non supportato.");
+        toast.warning("AudioContext non supportato per il suono.");
         return;
       }
-      const oscillator = audioCtx.createOscillator();
-      const gainNode = audioCtx.createGain();
-      oscillator.connect(gainNode);
-      gainNode.connect(audioCtx.destination);
-      oscillator.type = 'sine';
-      oscillator.frequency.setValueAtTime(660, audioCtx.currentTime);
-      gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
-      oscillator.start();
-      oscillator.stop(audioCtx.currentTime + 0.15);
+
+      const playTone = (frequency: number, startTime: number, duration: number, volume: number) => {
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime + startTime);
+        gainNode.gain.setValueAtTime(volume, audioCtx.currentTime + startTime); // Volume per tono
+        
+        oscillator.start(audioCtx.currentTime + startTime);
+        oscillator.stop(audioCtx.currentTime + startTime + duration);
+      };
+
+      const volume = 0.3; // Volume aumentato (valore tra 0 e 1)
+      const plinFrequency = 880; // Frequenza per "plin" (es. La5)
+      const plonFrequency = 659.25; // Frequenza per "plon" (es. Mi5)
+      const toneDuration = 0.12; // Durata di ogni tono
+      const delayBetweenTones = 0.03; // Breve pausa tra i toni
+
+      // Plin
+      playTone(plinFrequency, 0, toneDuration, volume);
+      // Plon (suonato dopo il plin)
+      playTone(plonFrequency, toneDuration + delayBetweenTones, toneDuration, volume);
+
     } catch (error) {
       console.error("Errore durante la riproduzione del suono:", error);
-      toast.error("Impossibile riprodurre il suono.");
+      toast.error("Impossibile riprodurre il suono bitonale.");
     }
   }, []);
 
@@ -70,14 +88,16 @@ const TurnSimulator: React.FC = () => {
       const currentLetterIndex = availableLetters.indexOf(selectedLetter);
       let nextLetterIndex = currentLetterIndex + 1;
       if (nextLetterIndex >= availableLetters.length) {
-        nextLetterIndex = 0; // Wrap around to the first letter
+        nextLetterIndex = 0; 
       }
       newSelectedLetter = availableLetters[nextLetterIndex];
       setSelectedLetter(newSelectedLetter);
     }
     setCurrentNumber(newNumber);
     playBeep();
-    speakTurn(newSelectedLetter, newNumber);
+    setTimeout(() => {
+      speakTurn(newSelectedLetter, newNumber);
+    }, 500); // Ritardo di 500ms
   };
 
   const handlePrevious = () => {
@@ -89,19 +109,23 @@ const TurnSimulator: React.FC = () => {
       const currentLetterIndex = availableLetters.indexOf(selectedLetter);
       let prevLetterIndex = currentLetterIndex - 1;
       if (prevLetterIndex < 0) {
-        prevLetterIndex = availableLetters.length - 1; // Wrap around to the last letter
+        prevLetterIndex = availableLetters.length - 1; 
       }
       newSelectedLetter = availableLetters[prevLetterIndex];
       setSelectedLetter(newSelectedLetter);
     }
     setCurrentNumber(newNumber);
     playBeep();
-    speakTurn(newSelectedLetter, newNumber);
+    setTimeout(() => {
+      speakTurn(newSelectedLetter, newNumber);
+    }, 500); // Ritardo di 500ms
   };
   
   const handleAnnounceCurrent = () => {
     playBeep();
-    speakTurn(selectedLetter, currentNumber);
+    setTimeout(() => {
+      speakTurn(selectedLetter, currentNumber);
+    }, 500); // Ritardo di 500ms
   };
 
   const formattedNumber = String(currentNumber).padStart(2, '0');
