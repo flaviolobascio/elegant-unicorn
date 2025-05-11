@@ -203,6 +203,7 @@ export function devErrorAndNavigationPlugin(): Plugin {
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  base: mode === 'production' ? '/visoreturni/' : '/', // Imposta il base path per la produzione
   server: {
     host: "::",
     port: 8080,
